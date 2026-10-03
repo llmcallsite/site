@@ -1,0 +1,755 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Understanding LLM Call Sites in Agentic Systems</title>
+<style>
+:root{
+  color-scheme: light;
+  --ground:#fbfaf7;
+  --paper:#ffffff;
+  --ink:#1c2230;
+  --ink-2:#4a5263;
+  --ink-3:#7a8293;
+  --rule:#e4e1d9;
+  --rule-2:#eeebe4;
+  --navy:#1f4b78;
+  --navy-2:#5b84b1;
+  --navy-3:#c6d3e4;
+  --navy-4:#edf2f8;
+  --brick:#b5412c;
+  --brick-2:#e5a493;
+  --brick-3:#f8ebe6;
+  --amber:#f6e3a8;
+  --serif:"Iowan Old Style","Charter","Palatino Linotype","Book Antiqua",Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+body{margin:0;background:var(--ground);color:var(--ink);font:16px/1.65 var(--sans);-webkit-font-smoothing:antialiased}
+img{max-width:100%;display:block}
+a{color:var(--navy);text-decoration-thickness:1px;text-underline-offset:3px}
+code,.mono{font-family:var(--mono);font-size:.88em}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:24px}
+.narrow{max-width:760px}
+
+/* top bar */
+.bar{position:sticky;top:0;z-index:10;background:rgba(251,250,247,.92);backdrop-filter:saturate(1.4) blur(8px);-webkit-backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--rule)}
+.bar .wrap{display:flex;align-items:center;gap:24px;height:56px}
+.brand{font-family:var(--serif);font-weight:600;font-size:17px;color:var(--ink);text-decoration:none;white-space:nowrap}
+.brand span{color:var(--brick)}
+.nav{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;margin-left:auto}
+.nav::-webkit-scrollbar{display:none}
+.nav a{font-size:13.5px;color:var(--ink-2);text-decoration:none;padding:6px 10px;border-radius:6px;white-space:nowrap}
+.nav a:hover{background:var(--rule-2);color:var(--ink)}
+.nav a.on{color:var(--navy);background:var(--navy-4)}
+
+/* hero */
+.hero{padding:72px 0 56px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.hero h1{font-family:var(--serif);font-weight:600;font-size:clamp(32px,4.6vw,52px);line-height:1.12;letter-spacing:-.01em;margin:14px 0 18px;max-width:22ch}
+.hero h1 em{font-style:normal;color:var(--navy)}
+.hero .sub{font-family:var(--serif);font-size:clamp(18px,2vw,21px);color:var(--ink-2);max-width:62ch;margin:0}
+.anon{display:inline-flex;align-items:center;gap:8px;margin-top:22px;font-size:14px;color:var(--ink-3)}
+.anon i{width:8px;height:8px;border-radius:50%;background:var(--brick);display:inline-block}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:44px;border-top:1px solid var(--rule)}
+.stat{padding:20px 20px 4px 0}
+.stat + .stat{padding-left:20px;border-left:1px solid var(--rule)}
+.stat b{display:block;font-family:var(--serif);font-weight:600;font-size:clamp(28px,3.4vw,40px);line-height:1.1;color:var(--ink);font-variant-numeric:lining-nums}
+.stat span{font-size:14px;color:var(--ink-3)}
+.actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:36px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:8px;font-size:14.5px;font-weight:600;text-decoration:none;border:1px solid var(--navy);color:var(--navy);background:transparent}
+.btn.solid{background:var(--navy);color:#fff}
+.btn:hover{filter:brightness(1.08)}
+
+/* sections */
+section{padding:80px 0;border-bottom:1px solid var(--rule)}
+.sec-head{display:grid;grid-template-columns:120px 1fr;gap:24px;margin-bottom:36px}
+.sec-num{font-family:var(--serif);font-size:15px;color:var(--brick);padding-top:10px;font-weight:600}
+h2{font-family:var(--serif);font-weight:600;font-size:clamp(26px,3vw,34px);line-height:1.2;margin:0 0 12px;letter-spacing:-.005em}
+h3{font-family:var(--serif);font-weight:600;font-size:21px;line-height:1.3;margin:0 0 8px}
+.lede{font-family:var(--serif);font-size:19px;color:var(--ink-2);margin:0;max-width:64ch}
+.body{margin-left:144px}
+p{margin:0 0 14px}
+
+/* headline comparison */
+.versus{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.vcard{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:28px}
+.vcard .big{font-family:var(--serif);font-weight:600;font-size:clamp(52px,7vw,84px);line-height:1;letter-spacing:-.02em}
+.vcard.a .big{color:var(--navy)}
+.vcard.b .big{color:var(--brick)}
+.vcard .what{font-size:15.5px;color:var(--ink-2);margin-top:10px;max-width:34ch}
+.meter{height:10px;border-radius:5px;background:var(--rule-2);margin-top:22px;overflow:hidden}
+.meter i{display:block;height:100%;border-radius:5px}
+.vcard.a .meter i{background:var(--navy);width:82%}
+.vcard.b .meter i{background:var(--brick);width:5.3%}
+.note{font-size:15px;color:var(--ink-2);margin-top:22px;max-width:72ch}
+
+/* figures */
+figure{margin:0;background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:20px}
+figure a{display:block;cursor:zoom-in}
+figcaption{font-size:14px;color:var(--ink-3);margin-top:14px;line-height:1.5}
+figcaption b{color:var(--ink-2);font-weight:600}
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:40px;align-items:start}
+.split.r{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr)}
+.stack > * + *{margin-top:20px}
+
+/* chain (motivating example) */
+.chain{list-style:none;margin:20px 0 0;padding:0}
+.chain li{position:relative;padding:0 0 18px 28px;font-size:15.5px;color:var(--ink-2)}
+.chain li::before{content:"";position:absolute;left:6px;top:8px;width:9px;height:9px;border-radius:50%;background:var(--navy-2)}
+.chain li::after{content:"";position:absolute;left:10px;top:20px;bottom:0;width:1px;background:var(--navy-3)}
+.chain li:last-child::after{display:none}
+.chain li.hit::before{background:var(--brick)}
+.chain b{color:var(--ink)}
+
+/* stages */
+.stages{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:28px}
+.stage{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:22px}
+.stage .k{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);font-weight:700}
+.stage h3{font-size:19px;margin-top:6px}
+.stage p{font-size:15px;color:var(--ink-2);margin:0}
+.stage .rq{margin-top:14px;font-size:13px;color:var(--ink-3)}
+
+/* definitions */
+.defs{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:28px}
+.def{border-top:2px solid var(--ink);padding-top:14px}
+.def h4{margin:0 0 8px;font-size:14px;letter-spacing:.06em;text-transform:uppercase}
+.def p{font-size:14.5px;color:var(--ink-2);margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{font-size:12.5px;padding:3px 9px;border-radius:999px;border:1px solid var(--rule);background:var(--paper);color:var(--ink-2);white-space:nowrap}
+.chip.n{border-color:var(--navy-3);color:var(--navy);background:var(--navy-4)}
+.chip.r{border-color:var(--brick-2);color:var(--brick);background:var(--brick-3)}
+
+/* RQ blocks */
+.rq-block + .rq-block{margin-top:72px}
+.rq-tag{display:inline-block;font-size:12.5px;font-weight:700;letter-spacing:.08em;color:#fff;background:var(--navy);padding:3px 9px;border-radius:5px;margin-bottom:12px}
+.rq-q{font-family:var(--serif);font-size:clamp(22px,2.4vw,27px);font-weight:600;line-height:1.3;margin:0 0 22px;max-width:40ch}
+.finding{background:var(--paper);border:1px solid var(--rule);border-left:3px solid var(--brick);border-radius:4px 10px 10px 4px;padding:16px 20px;margin:0 0 14px}
+.finding .fn{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--brick)}
+.finding p{margin:4px 0 0;font-family:var(--serif);font-size:17.5px;line-height:1.5;color:var(--ink)}
+.prose{font-size:15.5px;color:var(--ink-2)}
+
+/* tables */
+.tbl-wrap{overflow-x:auto;background:var(--paper);border:1px solid var(--rule);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:14.5px;font-variant-numeric:tabular-nums}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--rule-2);vertical-align:top}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:600;background:#faf9f6;white-space:nowrap}
+td.n,th.n{text-align:right}
+tr.grp td{background:var(--navy-4);color:var(--navy);font-weight:600;font-size:13px;letter-spacing:.02em}
+tr.grp td span{float:right;font-weight:500;color:var(--ink-3)}
+tbody tr:last-child td{border-bottom:0}
+.pat{font-weight:600;color:var(--ink);white-space:nowrap}
+.exp{color:var(--ink-3);font-size:13.5px}
+.ex{color:var(--ink-2);font-size:13.5px}
+.bar-cell{min-width:140px}
+.hbar{display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--rule-2);margin-top:6px}
+.hbar i{display:block;height:100%}
+.hbar .d{background:var(--brick)}
+.hbar .p{background:var(--brick-2)}
+.hbar .x{background:var(--navy-3)}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--ink-3);margin:14px 0 0}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+
+/* funnel */
+.funnel{display:grid;gap:8px;margin-top:8px}
+.frow{display:grid;grid-template-columns:200px 1fr 64px;align-items:center;gap:16px}
+.frow .lbl{font-size:14.5px;color:var(--ink-2);text-align:right;line-height:1.35}
+.frow .lbl small{display:block;color:var(--ink-3);font-size:12.5px}
+.frow .track{height:30px;background:var(--rule-2);border-radius:6px;position:relative;overflow:hidden}
+.frow .fill{position:absolute;inset:0 auto 0 0;border-radius:6px;background:var(--navy)}
+.frow .val{font-family:var(--serif);font-weight:600;font-size:20px}
+.frow.m .fill{background:var(--brick)}
+.fsep{margin:18px 0 6px 216px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+
+.outcome{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:5px}
+.o-all{background:var(--brick);color:#fff}
+.o-some{background:var(--brick-3);color:var(--brick)}
+.o-none{background:var(--rule-2);color:var(--ink-3)}
+
+/* implications */
+.impl{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.icard{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:24px}
+.icard h3{font-size:19px;margin-bottom:14px}
+.icard ol{margin:0;padding-left:20px;font-size:15px;color:var(--ink-2)}
+.icard li{margin-bottom:10px}
+.icard li b{color:var(--ink);font-weight:600}
+
+/* systems */
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.filters button{font:inherit;font-size:13.5px;padding:6px 12px;border-radius:999px;border:1px solid var(--rule);background:var(--paper);color:var(--ink-2);cursor:pointer}
+.filters button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.lang{font-size:12px;padding:1px 7px;border-radius:4px;background:var(--rule-2);color:var(--ink-2);font-weight:600}
+.dom{color:var(--ink-3);font-size:13.5px;white-space:nowrap}
+.sites-bar{display:inline-block;height:6px;border-radius:3px;background:var(--navy-2);vertical-align:middle;margin-left:8px}
+tfoot td{font-weight:600;border-top:1px solid var(--rule);background:#faf9f6}
+
+/* artifact */
+.pkg{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:24px 0}
+.pkg div{background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;font-size:15px;color:var(--ink-2)}
+.pkg b{display:block;color:var(--ink);font-size:15.5px;margin-bottom:2px}
+
+footer{padding:40px 0 64px;font-size:13.5px;color:var(--ink-3)}
+
+@media (max-width:900px){
+  .sec-head{grid-template-columns:1fr;gap:4px}
+  .sec-num{padding-top:0}
+  .body{margin-left:0}
+  .split,.split.r{grid-template-columns:1fr}
+  .stages,.defs,.impl{grid-template-columns:1fr}
+  .fsep{margin-left:0}
+}
+@media (max-width:640px){
+  .wrap{padding-inline:16px}
+  .stats{grid-template-columns:1fr 1fr}
+  .stat:nth-child(3){border-left:0;padding-left:0}
+  .stat:nth-child(n+3){border-top:1px solid var(--rule)}
+  .versus,.pkg{grid-template-columns:1fr}
+  .frow{grid-template-columns:1fr 52px;gap:6px 12px}
+  .frow .lbl{grid-column:1 / -1;text-align:left}
+  section{padding:56px 0}
+  .hero{padding:48px 0 40px}
+  .brand{font-size:15px}
+}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="#top">LLM Call Sites<span>.</span></a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#result">Key result</a>
+      <a href="#study">Study</a>
+      <a href="#findings">Findings</a>
+      <a href="#patterns">Gap patterns</a>
+      <a href="#runtime">Exploits &amp; fixes</a>
+      <a href="#disclosure">Disclosure</a>
+      <a href="#implications">Implications</a>
+      <a href="#systems">Systems</a>
+      <a href="#artifact">Artifact</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- HERO -->
+<div class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Empirical study · Supplementary website</div>
+    <h1>Understanding <em>LLM Call Sites</em> in Agentic Systems</h1>
+    <p class="sub">An empirical study from a software engineering perspective. We treat every place where a program calls a language model and acts on its reply as a software unit with a contract, and ask whether the program checks what that unit needs.</p>
+    <div class="anon"><i></i>Under double-anonymous review. This page contains no author information.</div>
+    <div class="stats">
+      <div class="stat"><b>496</b><span>LLM call sites</span></div>
+      <div class="stat"><b>40</b><span>open-source agentic systems</span></div>
+      <div class="stat"><b>13.4M</b><span>lines of code, four languages</span></div>
+      <div class="stat"><b>17,428</b><span>human review judgments</span></div>
+    </div>
+    <div class="actions">
+      <a class="btn solid" href="#artifact">Replication package</a>
+      <a class="btn" href="#findings">Read the findings</a>
+    </div>
+  </div>
+</div>
+
+<!-- KEY RESULT -->
+<section id="result">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">01</div>
+      <div>
+        <h2>Having checks is not satisfying the contract</h2>
+        <p class="lede">By the usual audit, agentic systems look well guarded. Measured against what each call site needs, almost none are.</p>
+      </div>
+    </div>
+    <div class="body">
+      <div class="versus">
+        <div class="vcard a">
+          <div class="big">82%</div>
+          <div class="what">of call sites check the call in code, both before and after it.</div>
+          <div class="meter"><i></i></div>
+        </div>
+        <div class="vcard b">
+          <div class="big">5.3%</div>
+          <div class="what">of call sites satisfy their whole expected contract. The median call site satisfies one third.</div>
+          <div class="meter"><i></i></div>
+        </div>
+      </div>
+      <p class="note">Programs check the <em>form</em> of a reply, such as whether it parses. The contract also requires its <em>meaning</em>, such as whether a proposed action is among those offered. A metric that counts guards overstates protection by an order of magnitude.</p>
+    </div>
+  </div>
+</section>
+
+<!-- STUDY -->
+<section id="study">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">02</div>
+      <div>
+        <h2>A contract view of LLM calls</h2>
+        <p class="lede">An LLM is a callee that is probabilistic and can be steered by its input, so its post-condition never holds by construction. It holds only where the program checks it.</p>
+      </div>
+    </div>
+    <div class="body">
+
+      <div class="split r">
+        <div class="prose">
+          <h3>What is at stake</h3>
+          <p>In Codewhale, a coding agent, a file in the workspace reaches a real Python process through three weak checks. Each step has a requirement in the expected contract, and each implementation falls short of it.</p>
+          <ol class="chain">
+            <li><b>Build the request.</b> Execution should be restricted to the advertised tools. A <code>repl</code> fence is a second, unadvertised way to run code.</li>
+            <li><b>Detect code in the reply.</b> Only completed tool-call blocks should run. Any reply that contains the marker as a substring counts as code.</li>
+            <li class="hit"><b>Execute the extracted code.</b> Code should run only as an approved tool call. It reaches <code>exec()</code> in a Python subprocess with no approval and no sandbox, although the documentation says "sandboxed".</li>
+          </ol>
+          <p>The gap has two trigger sources: an attacker who asks for the fence, and a model that merely mentions it. In one run, a model's refusal quoted the marker, and the loop executed fragments of its explanation as Python.</p>
+        </div>
+        <figure>
+          <a href="assets/fig/fig1-codewhale.png" target="_blank" rel="noopener"><img src="assets/fig/fig1-codewhale.png" alt="Three-step chain in Codewhale from an untrusted file to code execution, with partial and missing checks marked at each step." loading="lazy"></a>
+          <figcaption><b>Figure 1.</b> A file read by Codewhale reaches a real process through three weak checks.</figcaption>
+        </figure>
+      </div>
+
+      <div class="defs">
+        <div class="def">
+          <h4>Three phases</h4>
+          <p>Each responsibility unit has a contract <code>K = K<sub>pre</sub> ∪ K<sub>prompt</sub> ∪ K<sub>post</sub></code>: when and with which inputs the call is made, how the request is shaped, and which replies the program accepts.</p>
+          <div class="chips"><span class="chip">pre-condition</span><span class="chip">prompt</span><span class="chip">post-condition</span></div>
+        </div>
+        <div class="def">
+          <h4>Three assurance levels</h4>
+          <p>A constraint is stated to the model and never verified, checked by the program, or impossible to violate because the unit lacks the capability.</p>
+          <div class="chips"><span class="chip">prompt-only</span><span class="chip">≺</span><span class="chip">code-checked</span><span class="chip">≺</span><span class="chip n">capability-bound</span></div>
+        </div>
+        <div class="def">
+          <h4>Five verdicts</h4>
+          <p>Every expected constraint is compared with the implemented contract. Every verdict other than <em>satisfied</em> is a gap, with a counterexample and source evidence.</p>
+          <div class="chips"><span class="chip n">satisfied</span><span class="chip r">partial</span><span class="chip r">misplaced</span><span class="chip r">missing</span><span class="chip r">conflicting</span></div>
+        </div>
+      </div>
+
+      <div style="margin-top:56px">
+        <h3>Three stages, four research questions</h3>
+        <p class="prose" style="max-width:70ch">LLM agents perform the analysis steps of Stages I and II in isolated contexts, and three human reviewers check every step before its output is used. Stage III is performed manually.</p>
+      </div>
+      <figure style="margin-top:20px">
+        <a href="assets/fig/fig2-overview.png" target="_blank" rel="noopener"><img src="assets/fig/fig2-overview.png" alt="Study overview: agentic systems feed Stage I call-site analysis, Stage II contract reconstruction, and Stage III dynamic validation, answering RQ1 to RQ4." loading="lazy"></a>
+        <figcaption><b>Figure 2.</b> Overview of the study. The person icon marks steps with manual analysis or expert validation.</figcaption>
+      </figure>
+      <div class="stages">
+        <div class="stage">
+          <div class="k">Stage I</div>
+          <h3>Call-site analysis</h3>
+          <p>Locate call sites across four languages, split each reply into typed outputs, and trace every consumer of every output.</p>
+          <div class="rq">1,226 candidates → 496 call sites → 917 outputs → 1,222 consumption edges</div>
+        </div>
+        <div class="stage">
+          <div class="k">Stage II</div>
+          <h3>Contract reconstruction</h3>
+          <p>Derive the <em>expected</em> contract from a code-free specification without seeing the code, extract the <em>implemented</em> contract from the code without seeing the expected one, then compare.</p>
+          <div class="rq">579 units · 2,699 expected and 5,017 implemented constraints</div>
+        </div>
+        <div class="stage">
+          <div class="k">Stage III</div>
+          <h3>Dynamic validation</h3>
+          <p>Screen each gap for exploitability, attribute it to the threat chain, run a guided PoC, test triggers with a real model, and write a contract-guided fix.</p>
+          <div class="rq">1,697 gaps → 60 mechanisms → 38 triggered and patched</div>
+        </div>
+      </div>
+      <figure style="margin-top:28px">
+        <a href="assets/fig/fig3-contracts.png" target="_blank" rel="noopener"><img src="assets/fig/fig3-contracts.png" alt="Multi-agent contract reconstruction: responsibility specification, blind contract derivation, implemented contract extraction, and contract comparison, with an information visibility matrix." loading="lazy"></a>
+        <figcaption><b>Figure 3.</b> Multi-agent contract reconstruction for one responsibility unit. The derivation agent never sees the code, and the extraction agent never sees the expected contract. Reviewers agree at Gwet's AC1 between 0.91 and 0.99.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- FINDINGS -->
+<section id="findings">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">03</div>
+      <div>
+        <h2>Findings</h2>
+        <p class="lede">The research questions follow a call site from its role, to its constraints, to their adequacy, to their runtime consequences.</p>
+      </div>
+    </div>
+    <div class="body">
+
+      <div class="rq-block">
+        <span class="rq-tag">RQ1</span>
+        <p class="rq-q">What do LLM call sites do, and where do their outputs flow?</p>
+        <div class="finding"><div class="fn">Finding 1</div><p>48% of LLM outputs reach control flow or execution, and 40% of these are free text.</p></div>
+        <div class="finding"><div class="fn">Finding 2</div><p>71% of LLM outputs are used only by the program or by other models, and 22% of call sites serve decision-relevant and other roles at once.</p></div>
+        <figure style="margin-top:22px">
+          <a href="assets/fig/fig4-rq1.png" target="_blank" rel="noopener"><img src="assets/fig/fig4-rq1.png" alt="Four panels: operations of the 917 outputs, consumers reached, consumer kinds per output, and decision-relevant share in the 40 systems." loading="lazy"></a>
+          <figcaption><b>Figure 4.</b> Operations and consumers of the 917 typed outputs. Decision relevance varies more within a domain than across domains: software engineering agents range from 0% to 100%.</figcaption>
+        </figure>
+        <div class="split" style="margin-top:20px">
+          <figure>
+            <a href="assets/fig/fig5-storm.png" target="_blank" rel="noopener"><img src="assets/fig/fig5-storm.png" alt="STORM code that asks the model for Yes or No but approves any reply that does not start with No." loading="lazy"></a>
+            <figcaption><b>Figure 5.</b> A <code>classify</code> gate in STORM. Any reply other than a leading "No", including a lowercase "no" or a refusal, approves the topic.</figcaption>
+          </figure>
+          <div class="prose">
+            <h3>A free-text reply as a safety gate</h3>
+            <p>Most outputs never reach a person. Outputs also fan out: 57% feed two or more kinds of consumer, and 238 model-to-model hand-offs form chains of up to 12 steps.</p>
+            <p>An error or an injected instruction at the start of such a chain can shape decisions several calls later without any person in the loop.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="rq-block">
+        <span class="rq-tag">RQ2</span>
+        <p class="rq-q">How do agentic systems constrain LLM calls?</p>
+        <div class="finding"><div class="fn">Finding 3</div><p>Programs enforce 78% of their constraints in code, but 67% of prompt-phase constraints are only requested from the model, including 268 that code could decide.</p></div>
+        <div class="finding"><div class="fn">Finding 4</div><p>Code checks favor recovery over validation, and decision-relevant call sites are not better protected than others in 18 of 23 systems.</p></div>
+        <figure style="margin-top:22px">
+          <a href="assets/fig/fig6-rq2.png" target="_blank" rel="noopener"><img src="assets/fig/fig6-rq2.png" alt="Assurance of the 5,017 implemented constraints by phase, constraint kind and call site, and prompt-only share per system." loading="lazy"></a>
+          <figcaption><b>Figure 6.</b> Assurance of the 5,017 implemented constraints. (a) By phase, kind and call site. (b) Prompt-only share per system: 18 of 23 systems give decision-relevant sites no stronger protection.</figcaption>
+        </figure>
+      </div>
+
+      <div class="rq-block">
+        <span class="rq-tag">RQ3</span>
+        <p class="rq-q">Where do expected and implemented contracts diverge?</p>
+        <div class="finding"><div class="fn">Finding 5</div><p>63% of the expected constraints are unmet, rising to 72% for post-conditions, and 29% are enforced more weakly than required.</p></div>
+        <div class="finding"><div class="fn">Finding 6</div><p>82% of call sites check in code before and after the call, yet only 5.3% satisfy their whole expected contract, and the median call site satisfies one third.</p></div>
+        <div class="finding"><div class="fn">Finding 7</div><p>Ten recurring patterns explain 99% of the gaps, and fail-open handling alone accounts for 44% of the conflicting verdicts.</p></div>
+        <figure style="margin-top:22px">
+          <a href="assets/fig/fig7-rq3.png" target="_blank" rel="noopener"><img src="assets/fig/fig7-rq3.png" alt="Verdicts of expected constraints by phase and call site, and a heatmap of required versus implemented assurance." loading="lazy"></a>
+          <figcaption><b>Figure 7.</b> Verdicts of the 2,699 expected constraints, and required vs. implemented assurance. The red frame marks constraints enforced more weakly than required.</figcaption>
+        </figure>
+        <div class="split" style="margin-top:20px">
+          <figure>
+            <a href="assets/fig/fig8-adequacy.png" target="_blank" rel="noopener"><img src="assets/fig/fig8-adequacy.png" alt="Checks present versus contract satisfied per call site, and the distribution of the share of the contract each call site satisfies." loading="lazy"></a>
+            <figcaption><b>Figure 8.</b> Checks present vs. contracts satisfied per call site.</figcaption>
+          </figure>
+          <figure>
+            <a href="assets/fig/fig9-geminicli.png" target="_blank" rel="noopener"><img src="assets/fig/fig9-geminicli.png" alt="Gemini CLI safety check code where empty, unparseable, or failed replies all return ALLOW." loading="lazy"></a>
+            <figcaption><b>Figure 9.</b> A fail-open safety check in Gemini CLI. Five of six return paths allow the call; only a reply that parses can deny it.</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="rq-block">
+        <span class="rq-tag">RQ4</span>
+        <p class="rq-q">Are contract gaps exploitable, and does enforcing the missing constraint prevent them?</p>
+        <div class="finding"><div class="fn">Finding 8</div><p>17% of the gaps are technically exploitable, the missing constraint lies on the threat chain for 7% (114 gaps), and 38 of the 60 mechanisms behind them trigger.</p></div>
+        <div class="finding"><div class="fn">Finding 9</div><p>A minimal code fix that enforces the expected constraint stops the original exploit for all 38 mechanisms and blocks 23 completely, while fixes that only label untrusted content work for some mechanisms and not others.</p></div>
+        <p class="prose" style="margin-top:18px">The full funnel and the trigger tests are in <a href="#runtime">Exploits &amp; fixes</a> below.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- PATTERNS -->
+<section id="patterns">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">04</div>
+      <div>
+        <h2>Ten recurring gap patterns</h2>
+        <p class="lede">Coding each gap by the reason it exists yields ten patterns that cover 1,685 of the 1,697 gaps. Each recurs in 12 to 34 systems, so the gaps are systematic, and half of them arise after the call.</p>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Pattern</th><th>Expected → implemented</th><th class="n">Gaps</th><th class="n">Sites</th><th class="n">Sys.</th><th class="bar-cell">Exploitable · direct / partial</th><th>Example</th></tr>
+        </thead>
+        <tbody>
+          <tr class="grp"><td colspan="7">Before the call: what the model receives and what it may do <span>420 gaps (25%)</span></td></tr>
+          <tr><td class="pat">Unchecked call inputs</td><td class="exp">inputs checked → call made anyway</td><td class="n">330</td><td class="n">265</td><td class="n">34</td><td class="bar-cell" data-e="7" data-d="3" data-p="0"></td><td class="ex">Continue: prompt not checked before call</td></tr>
+          <tr><td class="pat">Over-broad authority</td><td class="exp">least authority → wider tool set</td><td class="n">90</td><td class="n">74</td><td class="n">27</td><td class="bar-cell" data-e="15" data-d="7" data-p="3"></td><td class="ex">OpenManus: planner may also delete plans</td></tr>
+          <tr class="grp"><td colspan="7">In the request: how the model is asked <span>335 gaps (20%)</span></td></tr>
+          <tr><td class="pat">Underspecified prompt</td><td class="exp">task fully stated → left unstated</td><td class="n">242</td><td class="n">168</td><td class="n">32</td><td class="bar-cell" data-e="9" data-d="0" data-p="8"></td><td class="ex">CodeWhale: router not told request is data</td></tr>
+          <tr><td class="pat">Faulty request assembly</td><td class="exp">input intact, fenced → altered or unfenced</td><td class="n">93</td><td class="n">88</td><td class="n">27</td><td class="bar-cell" data-e="12" data-d="1" data-p="11"></td><td class="ex">PentAGI: raw tool output inlined unescaped</td></tr>
+          <tr class="grp"><td colspan="7">After the call: what the program accepts <span>829 gaps (49%)</span></td></tr>
+          <tr><td class="pat">Partial format check</td><td class="exp">well-formed reply → partly checked</td><td class="n">249</td><td class="n">218</td><td class="n">32</td><td class="bar-cell" data-e="72" data-d="6" data-p="5"></td><td class="ex">STORM: empty section written to article</td></tr>
+          <tr><td class="pat">Unchecked content</td><td class="exp">grounded reply → accepted as is</td><td class="n">253</td><td class="n">199</td><td class="n">34</td><td class="bar-cell" data-e="81" data-d="11" data-p="9"></td><td class="ex">agenticSeek: summary kept even if empty</td></tr>
+          <tr><td class="pat">Fail-open handling</td><td class="exp">invalid reply rejected → default taken</td><td class="n">146</td><td class="n">128</td><td class="n">30</td><td class="bar-cell" data-e="23" data-d="0" data-p="1"></td><td class="ex">JARVIS: no “yes” means no tool call</td></tr>
+          <tr><td class="pat">Unvalidated action</td><td class="exp">action in offered set → run as proposed</td><td class="n">138</td><td class="n">103</td><td class="n">28</td><td class="bar-cell" data-e="26" data-d="19" data-p="4"></td><td class="ex">Goose: unoffered tool names accepted</td></tr>
+          <tr><td class="pat">Prompt-only check</td><td class="exp">checked in code → only prompted</td><td class="n">43</td><td class="n">33</td><td class="n">12</td><td class="bar-cell" data-e="14" data-d="1" data-p="1"></td><td class="ex">Gemini CLI: “no change” flag trusted</td></tr>
+          <tr class="grp"><td colspan="7">Across paths: whether a check holds everywhere <span>101 gaps (6%)</span></td></tr>
+          <tr><td class="pat">Path-dependent check</td><td class="exp">checked on all paths → main path only</td><td class="n">101</td><td class="n">81</td><td class="n">28</td><td class="bar-cell" data-e="30" data-d="0" data-p="23"></td><td class="ex">SWE-agent: one-action check on one parser</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--brick)"></i>direct: enforcing the constraint breaks the threat chain</span>
+      <span><i style="background:var(--brick-2)"></i>partial: it narrows the chain</span>
+      <span><i style="background:var(--navy-3)"></i>exploitable, constraint off the chain</span>
+      <span>Bar length is relative to the 81 exploitable gaps of the largest pattern.</span>
+    </div>
+  </div>
+</section>
+
+<!-- RUNTIME -->
+<section id="runtime">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">05</div>
+      <div>
+        <h2>From gaps to exploits and fixes</h2>
+        <p class="lede">Stage III follows every gap through feasibility screening, gap attribution, a guided PoC, trigger testing with a real model, and a contract-guided fix.</p>
+      </div>
+    </div>
+    <div class="body">
+      <div class="funnel" id="funnel">
+        <div class="frow"><div class="lbl">Gaps from RQ3</div><div class="track"><div class="fill" data-v="1697"></div></div><div class="val">1,697</div></div>
+        <div class="frow"><div class="lbl">Technically exploitable<small>pass all four threat-chain conditions</small></div><div class="track"><div class="fill" data-v="290"></div></div><div class="val">290</div></div>
+        <div class="frow"><div class="lbl">Missing constraint on the threat chain<small>48 direct, 66 partial</small></div><div class="track"><div class="fill" data-v="114"></div></div><div class="val">114</div></div>
+      </div>
+      <div class="fsep">Mechanisms behind the 114 gaps</div>
+      <div class="funnel">
+        <div class="frow m"><div class="lbl">Mechanisms with an executed PoC</div><div class="track"><div class="fill" data-v="60" data-max="60"></div></div><div class="val">60</div></div>
+        <div class="frow m"><div class="lbl">Confirmed to trigger<small>36 with a real model, 2 deterministically</small></div><div class="track"><div class="fill" data-v="38" data-max="60"></div></div><div class="val">38</div></div>
+        <div class="frow m"><div class="lbl">Original exploit stopped by the fix</div><div class="track"><div class="fill" data-v="38" data-max="60"></div></div><div class="val">38</div></div>
+        <div class="frow m"><div class="lbl">Blocked completely<small>no variant or sibling path left</small></div><div class="track"><div class="fill" data-v="23" data-max="60"></div></div><div class="val">23</div></div>
+      </div>
+      <p class="note">Screening excludes 83% of the gaps, mostly because they arise before the reply exists or an independent check stops the bad value. The 60 mechanisms score 9 critical, 21 high, 26 medium and 4 low on CVSS v3.1. Patches span 19 systems and range from 1 to 366 lines.</p>
+
+      <h3 style="margin-top:48px">Ten of the 58 real-model trigger tests</h3>
+      <p class="prose">Each test tries up to ten framings of the payload against <code>deepseek-v4-flash</code>, stops at the first that reaches the consumer, and reruns it. Some need no attacker at all.</p>
+      <div class="tbl-wrap" style="margin-top:16px">
+        <table>
+          <thead><tr><th>System</th><th>Mechanism</th><th>Source</th><th class="n">Hits</th><th>Causes of misses</th></tr></thead>
+          <tbody>
+            <tr class="grp"><td colspan="5">Triggered in every run</td></tr>
+            <tr><td class="pat">AgentLaboratory</td><td>bare regex passes model text to <code>exec()</code></td><td>attacker</td><td class="n"><span class="outcome o-all">5/5</span></td><td class="ex"></td></tr>
+            <tr><td class="pat">JARVIS</td><td>picks a tool from an empty candidate pool</td><td>model error</td><td class="n"><span class="outcome o-all">5/5</span></td><td class="ex"></td></tr>
+            <tr><td class="pat">gpt-researcher</td><td>chat renders report text as HTML</td><td>attacker</td><td class="n"><span class="outcome o-all">5/5</span></td><td class="ex"></td></tr>
+            <tr class="grp"><td colspan="5">Triggered in some runs</td></tr>
+            <tr><td class="pat">skyvern</td><td>browser action policy only observes</td><td>attacker</td><td class="n"><span class="outcome o-some">4/5</span></td><td class="ex">cross-domain link flagged (1)</td></tr>
+            <tr><td class="pat">Goose</td><td>auto mode runs injected calls without review</td><td>attacker</td><td class="n"><span class="outcome o-some">1/5</span></td><td class="ex">refused (3), turn budget ran out (1)</td></tr>
+            <tr><td class="pat">Codewhale</td><td><code>repl</code> fence found by substring</td><td>attacker, model</td><td class="n"><span class="outcome o-some">1/10</span></td><td class="ex">parser unmet (6), refused (2), off-task (1)</td></tr>
+            <tr class="grp"><td colspan="5">Never triggered</td></tr>
+            <tr><td class="pat">OpenManus</td><td><code>python_execute</code> runs model-written code</td><td>attacker</td><td class="n"><span class="outcome o-none">0/10</span></td><td class="ex">injection recognized (10)</td></tr>
+            <tr><td class="pat">Codewhale</td><td>ghost-text continuation skips the shell approval</td><td>attacker</td><td class="n"><span class="outcome o-none">0/20</span></td><td class="ex">exact format never reproduced (20)</td></tr>
+            <tr><td class="pat">UFO</td><td>editing mode rebuilds the whole task graph</td><td>attacker</td><td class="n"><span class="outcome o-none">0/10</span></td><td class="ex">injection recognized (10)</td></tr>
+            <tr><td class="pat">khoj</td><td>tool dispatch skips the authorization check</td><td>attacker</td><td class="n"><span class="outcome o-none">0/10</span></td><td class="ex">refused (4), ignored (4), wrong format (2)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <figure style="margin-top:28px">
+        <a href="assets/fig/fig10-cases.png" target="_blank" rel="noopener"><img src="assets/fig/fig10-cases.png" alt="Two mechanisms: in gpt-researcher a render path reaches the browser with no sanitizer; in khoj an unscoped opt-in lets an ordinary user fetch an internal address." loading="lazy"></a>
+        <figcaption><b>Figure 10.</b> Two triggered mechanisms. (a) A render path in gpt-researcher reaches the browser with no sanitizer. (b) An unscoped opt-in in khoj reaches an internal address, with no injection needed.</figcaption>
+      </figure>
+
+      <h3 id="disclosure" style="margin-top:48px">Responsible disclosure</h3>
+      <p class="prose">We have reported all 38 triggered mechanisms, which span 19 systems and 68 gaps, to the maintainers through each project's private security channel, together with our patches. The patches range from 1 to 366 lines and block 23 of the 38 exploits completely. We update the status below as the maintainers respond, and this page lists no mechanism-level details until they have had time to fix the issues.</p>
+      <div class="tbl-wrap" style="margin-top:16px">
+        <table class="disc">
+          <thead><tr><th>System</th><th class="n">Mechanisms</th><th>Report and fix</th><th>Disclosure status</th></tr></thead>
+          <tbody>
+            <tr><td class="pat">STORM</td><td class="n">5</td><td>prepared</td><td><span class="outcome o-some">submitted</span></td></tr>
+            <tr><td class="pat">JARVIS</td><td class="n">4</td><td>prepared</td><td><span class="outcome o-some">submitted</span></td></tr>
+            <tr><td class="pat">Agent S</td><td class="n">3</td><td>prepared</td><td><span class="outcome o-some">submitted</span></td></tr>
+            <tr><td class="pat">CodeWhale</td><td class="n">3</td><td>prepared</td><td><span class="outcome o-some">submitted</span></td></tr>
+            <tr><td class="pat">DeerFlow</td><td class="n">3</td><td>prepared</td><td><span class="outcome o-some">submitted</span></td></tr>
+            <tr><td class="pat">OpenHands</td><td class="n">3</td><td>prepared</td><td><span class="outcome o-some">submitted</span></td></tr>
+            <tr><td class="pat">Gemini CLI</td><td class="n">2</td><td>prepared</td><td><span class="outcome o-some">submitted</span></td></tr>
+            <tr><td class="pat">GPT Researcher</td><td class="n">2</td><td>prepared</td><td><span class="outcome o-some">submitted</span></td></tr>
+            <tr><td class="pat">Skyvern</td><td class="n">2</td><td>prepared</td><td><span class="outcome o-some">submitted</span></td></tr>
+            <tr><td class="pat">Voyager</td><td class="n">2</td><td>prepared</td><td><span class="outcome o-some">submitted</span></td></tr>
+            <tr><td class="pat">Agent Laboratory</td><td class="n">1</td><td>prepared</td><td><span class="outcome o-some">submitted</span></td></tr>
+            <tr><td class="pat">Cline</td><td class="n">1</td><td>prepared</td><td><span class="outcome o-some">submitted</span></td></tr>
+            <tr><td class="pat">FinRobot</td><td class="n">1</td><td>prepared</td><td><span class="outcome o-some">submitted</span></td></tr>
+            <tr><td class="pat">Magentic-UI</td><td class="n">1</td><td>prepared</td><td><span class="outcome o-some">submitted</span></td></tr>
+            <tr><td class="pat">OpenCode</td><td class="n">1</td><td>prepared</td><td><span class="outcome o-some">submitted</span></td></tr>
+            <tr><td class="pat">PentAGI</td><td class="n">1</td><td>prepared</td><td><span class="outcome o-some">submitted</span></td></tr>
+            <tr><td class="pat">Qwen Code</td><td class="n">1</td><td>prepared</td><td><span class="outcome o-some">submitted</span></td></tr>
+            <tr><td class="pat">UFO</td><td class="n">1</td><td>prepared</td><td><span class="outcome o-some">submitted</span></td></tr>
+            <tr><td class="pat">UI-TARS Desktop</td><td class="n">1</td><td>prepared</td><td><span class="outcome o-some">submitted</span></td></tr>
+          </tbody>
+          <tfoot><tr><td>19 systems</td><td class="n">38</td><td>38 prepared</td><td>38 submitted</td></tr></tfoot>
+        </table>
+      </div>
+      <p class="note">Status as of the submission date.</p>
+    </div>
+  </div>
+</section>
+
+<!-- IMPLICATIONS -->
+<section id="implications">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">06</div>
+      <div>
+        <h2>Implications</h2>
+        <p class="lede">Having checks says little about their adequacy, protection does not follow the stakes, and contracts break on the failure paths.</p>
+      </div>
+    </div>
+    <div class="impl">
+      <div class="icard">
+        <h3>For agent developers</h3>
+        <ol>
+          <li><b>Write the contract before the code.</b> The derivation criteria work as a checklist for each responsibility.</li>
+          <li><b>Move decidable constraints out of the prompt.</b> 268 syntactic constraints are only stated to the model.</li>
+          <li><b>Fail closed, on every exit.</b> An empty, unparseable, truncated or failed reply should be rejected.</li>
+          <li><b>Validate proposed actions against what was offered</b> before dispatching a tool call or using an identifier from a reply.</li>
+        </ol>
+      </div>
+      <div class="icard">
+        <h3>For framework maintainers</h3>
+        <ol>
+          <li><b>Safe defaults remove whole gap patterns.</b> Tool dispatch should reject names and arguments outside the declared tools.</li>
+          <li><b>Structured-output helpers should raise</b> on a parse failure and never fall back to free text.</li>
+          <li><b>Make least privilege the default</b> by scoping tools to each call. Capability restriction covers only 7.6% of constraints today.</li>
+        </ol>
+      </div>
+      <div class="icard">
+        <h3>For researchers and tool builders</h3>
+        <ol>
+          <li><b>Measure whether checks are adequate.</b> Counting guards overstates protection by an order of magnitude.</li>
+          <li><b>Turn the gap patterns into detectors.</b> Several have syntactic signatures, such as an exception handler that returns approval.</li>
+          <li><b>Study agents at the call-site level.</b> Call-site contracts locate the failure and the missing check.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SYSTEMS -->
+<section id="systems">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">07</div>
+      <div>
+        <h2>Subject systems</h2>
+        <p class="lede">40 popular open-source agentic systems in six task domains, each with more than 5k GitHub stars and analyzed at a fixed commit.</p>
+      </div>
+    </div>
+    <div class="filters" id="filters" role="group" aria-label="Filter by domain"></div>
+    <div class="tbl-wrap">
+      <table id="sys">
+        <thead><tr><th>System</th><th>Domain</th><th>Lang</th><th class="n">Stars</th><th class="n">Contr.</th><th class="n">Since</th><th class="n">KLOC</th><th class="n">Cand.</th><th>Call sites</th></tr></thead>
+        <tbody></tbody>
+        <tfoot><tr><td colspan="7" id="sys-foot-l">All 40 systems</td><td class="n" id="sys-cand"></td><td id="sys-sites"></td></tr></tfoot>
+      </table>
+    </div>
+    <p class="note">Stars and contributors are GitHub metadata. <em>Cand.</em> counts the candidate sites we examined; <em>Call sites</em> are the confirmed ones.</p>
+  </div>
+</section>
+
+<!-- ARTIFACT -->
+<section id="artifact">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">08</div>
+      <div>
+        <h2>Replication package</h2>
+        <p class="lede">Everything needed to inspect, reuse or extend the study, with source evidence for every claim.</p>
+      </div>
+    </div>
+    <div class="body">
+      <div class="pkg">
+        <div><b>Subject systems</b>The 40 systems and the commits we analyzed.</div>
+        <div><b>Call-site profile</b>All 496 call sites, their 917 typed outputs and 1,222 consumption edges.</div>
+        <div><b>Contracts</b>Expected and implemented contracts with verdicts and <code>file:line</code> source evidence.</div>
+        <div><b>Review records</b>The reviewer judgments of Stages I and II and their adjudication.</div>
+        <div><b>Analysis scripts</b>The scripts behind the results reported in the paper.</div>
+      </div>
+      <a class="btn solid" id="repo-link" href="https://anonymous.4open.science/r/llm-callsite-contracts" target="_blank" rel="noopener noreferrer">Browse the repository</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">Supplementary material for an anonymous submission. This page sets no cookies, loads no third-party resources, and collects no analytics.</div>
+</footer>
+
+<script>
+(function(){
+  // Gap pattern bars.
+  var MAXE = 81;
+  document.querySelectorAll('td[data-e]').forEach(function(td){
+    var e=+td.dataset.e, d=+td.dataset.d, p=+td.dataset.p, x=e-d-p;
+    var w=function(v){return (v/MAXE*100).toFixed(2)+'%';};
+    td.innerHTML = '<span class="mono">'+e+'</span> <span class="ex">· '+d+' / '+p+'</span>'
+      + '<div class="hbar" style="width:'+Math.max(e/MAXE*100,2)+'%"><i class="d" style="width:'+(e?d/e*100:0)+'%"></i><i class="p" style="width:'+(e?p/e*100:0)+'%"></i><i class="x" style="width:'+(e?x/e*100:0)+'%"></i></div>';
+  });
+
+  // Funnel widths, linear: gaps relative to 1,697, mechanisms relative to 60.
+  document.querySelectorAll('.fill[data-v]').forEach(function(el){
+    var v=+el.dataset.v, max=el.dataset.max ? +el.dataset.max : 1697;
+    el.style.width = (v/max*100).toFixed(1)+'%';
+  });
+
+  // Subject systems (Table 1 of the paper).
+  var S = [
+    ['Software engineering',[
+      ['OpenCode','TS','210k','1,016',2025,'450',16,9],['Codex','Rust','126k','625',2025,'894',13,2],
+      ['Gemini CLI','TS','107k','698',2025,'249',52,7],['OpenHands','Py','89k','554',2024,'95',29,6],
+      ['Cline','TS','69k','328',2024,'202',10,2],['Open Interpreter','Rust','68k','616',2023,'894',16,3],
+      ['Aider','Py','49k','182',2023,'18',7,3],['CodeWhale','Rust','41k','229',2026,'951',36,26],
+      ['Continue','TS','36k','507',2023,'201',32,9],['Qwen Code','TS','28k','576',2025,'1,532',50,13],
+      ['Grok Build','Rust','27k','1',2026,'1,240',24,2],['Prime Agent','TS','21k','225',2026,'174',27,10],
+      ['SWE-agent','Py','20k','101',2024,'11',10,1],['Devika','Py','20k','47',2024,'3.6',21,7],
+      ['Plandex','Go','16k','27',2023,'60',11,1]]],
+    ['Computer & web use',[
+      ['UI-TARS Desktop','TS','39k','49',2025,'123',31,26],['Skyvern','Py','23k','95',2024,'606',14,15],
+      ['Agent S','Py','12k','27',2024,'17',49,33],['Magentic-UI','Py','10k','35',2025,'37',4,4],
+      ['UFO','Py','9.8k','30',2024,'73',30,13]]],
+    ['Research & science',[
+      ['DeerFlow','Py','83k','467',2025,'176',98,18],['STORM','Py','31k','26',2024,'10',46,40],
+      ['GPT Researcher','Py','30k','271',2023,'30',26,6],['RD-Agent','Py','15k','40',2024,'49',90,8],
+      ['Agent Laboratory','Py','5.9k','10',2025,'3.6',43,27]]],
+    ['General-purpose',[
+      ['OpenManus','Py','58k','62',2025,'10',10,7],['Goose','Rust','55k','642',2024,'309',36,13],
+      ['AgenticSeek','Py','27k','51',2025,'7.4',28,18],['JARVIS','Py','25k','23',2023,'5.9',60,57],
+      ['XAgent','Py','8.6k','38',2023,'17',12,7]]],
+    ['Personal assistant',[
+      ['OpenClaw','TS','390k','3,416',2025,'4,186',71,13],['Nanobot','Py','49k','457',2026,'174',53,21],
+      ['Khoj','Py','37k','76',2021,'57',46,13],['OpenAgent','Go','5.7k','65',2020,'110',50,18]]],
+    ['Domain-specific',[
+      ['TradingAgents','Py','108k','21',2024,'8.5',22,13],['Strix','Py','64k','71',2025,'51',9,6],
+      ['PentAGI','Go','25k','17',2025,'250',13,2],['Data Formulator','Py','17k','37',2024,'88',16,2],
+      ['FinRobot','Py','8.1k','7',2024,'19',8,8],['Voyager','Py','7.2k','13',2023,'8.5',7,7]]]
+  ];
+  var LANG={TS:'TypeScript',Py:'Python',Rust:'Rust',Go:'Go'};
+  var tbody=document.querySelector('#sys tbody'), filters=document.getElementById('filters');
+  var maxSites=57, rows=[];
+  S.forEach(function(g){ g[1].forEach(function(r){
+    var tr=document.createElement('tr'); tr.dataset.dom=g[0];
+    tr.innerHTML='<td class="pat">'+r[0]+'</td><td class="dom">'+g[0]+'</td><td><span class="lang" title="'+LANG[r[1]]+'">'+r[1]+'</span></td>'
+      +'<td class="n">'+r[2]+'</td><td class="n">'+r[3]+'</td><td class="n">'+r[4]+'</td><td class="n">'+r[5]+'</td><td class="n">'+r[6]+'</td>'
+      +'<td><span class="mono">'+r[7]+'</span><span class="sites-bar" style="width:'+(r[7]/maxSites*90).toFixed(1)+'px"></span></td>';
+    tbody.appendChild(tr); rows.push([tr,g[0],r[6],r[7]]);
+  });});
+  function apply(dom){
+    var c=0,s=0,n=0;
+    rows.forEach(function(x){var on=!dom||x[1]===dom; x[0].hidden=!on; if(on){c+=x[2];s+=x[3];n++;}});
+    document.getElementById('sys-foot-l').textContent = dom ? (dom+': '+n+' systems') : 'All 40 systems';
+    document.getElementById('sys-cand').textContent=c.toLocaleString('en-US');
+    document.getElementById('sys-sites').innerHTML='<span class="mono">'+s+'</span>';
+    filters.querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed', String((b.dataset.dom||'')===(dom||'')));});
+  }
+  [['All',''],].concat(S.map(function(g){return [g[0],g[0]];})).forEach(function(f){
+    var b=document.createElement('button'); b.type='button'; b.textContent=f[0]; b.dataset.dom=f[1];
+    b.addEventListener('click',function(){apply(f[1]);}); filters.appendChild(b);
+  });
+  apply('');
+
+  // Highlight the current section in the nav.
+  var links=[].slice.call(document.querySelectorAll('.nav a'));
+  var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'));});
+  if ('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ var i=secs.indexOf(e.target); links.forEach(function(l,j){l.classList.toggle('on',i===j);}); } });
+    },{rootMargin:'-45% 0px -50% 0px'});
+    secs.forEach(function(s){ if(s) io.observe(s); });
+  }
+})();
+</script>
+</body>
+</html>

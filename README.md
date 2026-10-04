@@ -1,4 +1,4 @@
-# Understanding LLM Call Sites in Agentic Systems
+# When Code Becomes an LLM Call: An Empirical Study of Call-Site Contracts in Agentic Systems
 
 Supplementary material for an anonymous submission under double-anonymous review.
 

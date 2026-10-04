@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
-<title>Understanding LLM Call Sites in Agentic Systems</title>
+<title>When Code Becomes an LLM Call</title>
 <style>
 :root{
   color-scheme: light;
@@ -53,6 +53,7 @@ code,.mono{font-family:var(--mono);font-size:.88em}
 .eyebrow{font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
 .hero h1{font-family:var(--serif);font-weight:600;font-size:clamp(32px,4.6vw,52px);line-height:1.12;letter-spacing:-.01em;margin:14px 0 18px;max-width:22ch}
 .hero h1 em{font-style:normal;color:var(--navy)}
+.h1-sub{font-family:var(--serif);font-size:clamp(19px,2.2vw,24px);color:var(--ink);margin:-6px 0 20px;max-width:40ch;line-height:1.35}
 .hero .sub{font-family:var(--serif);font-size:clamp(18px,2vw,21px);color:var(--ink-2);max-width:62ch;margin:0}
 .anon{display:inline-flex;align-items:center;gap:8px;margin-top:22px;font-size:14px;color:var(--ink-3)}
 .anon i{width:8px;height:8px;border-radius:50%;background:var(--brick);display:inline-block}
@@ -172,7 +173,10 @@ tbody tr:last-child td{border-bottom:0}
 .o-none{background:var(--rule-2);color:var(--ink-3)}
 
 /* implications */
-.impl{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.impl{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.icard.wide{grid-column:1 / -1}
+.icard.wide ol{columns:2;column-gap:40px}
+.icard.wide li{break-inside:avoid}
 .icard{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:24px}
 .icard h3{font-size:19px;margin-bottom:14px}
 .icard ol{margin:0;padding-left:20px;font-size:15px;color:var(--ink-2)}
@@ -201,6 +205,7 @@ footer{padding:40px 0 64px;font-size:13.5px;color:var(--ink-3)}
   .body{margin-left:0}
   .split,.split.r{grid-template-columns:1fr}
   .stages,.defs,.impl{grid-template-columns:1fr}
+  .icard.wide ol{columns:1}
   .fsep{margin-left:0}
 }
 @media (max-width:640px){
@@ -221,7 +226,7 @@ footer{padding:40px 0 64px;font-size:13.5px;color:var(--ink-3)}
 
 <header class="bar">
   <div class="wrap">
-    <a class="brand" href="#top">LLM Call Sites<span>.</span></a>
+    <a class="brand" href="#top">Call-Site Contracts<span>.</span></a>
     <nav class="nav" aria-label="Sections">
       <a href="#result">Key result</a>
       <a href="#study">Study</a>
@@ -242,8 +247,9 @@ footer{padding:40px 0 64px;font-size:13.5px;color:var(--ink-3)}
 <div class="hero">
   <div class="wrap">
     <div class="eyebrow">Empirical study · Supplementary website</div>
-    <h1>Understanding <em>LLM Call Sites</em> in Agentic Systems</h1>
-    <p class="sub">An empirical study from a software engineering perspective. We treat every place where a program calls a language model and acts on its reply as a software unit with a contract, and ask whether the program checks what that unit needs.</p>
+    <h1>When Code Becomes an <em>LLM Call</em></h1>
+    <p class="h1-sub">An Empirical Study of Call-Site Contracts in Agentic Systems</p>
+    <p class="sub">Agentic systems replace parts of their logic, such as choosing the next tool, judging whether an action is allowed, or writing code to run, with calls to a large language model. The program still relies on what this logic must guarantee, so the guarantee must come from the program around each call site, as a contract. We study these contracts in 496 call sites of 40 open-source agentic systems.</p>
     <div class="anon"><i></i>Under double-anonymous review. This page contains no author information.</div>
     <div class="stats">
       <div class="stat"><b>496</b><span>LLM call sites</span></div>
@@ -383,7 +389,7 @@ footer{padding:40px 0 64px;font-size:13.5px;color:var(--ink-3)}
 
       <div class="rq-block">
         <span class="rq-tag">RQ1</span>
-        <p class="rq-q">What do LLM call sites do, and where do their outputs flow?</p>
+        <p class="rq-q">Which logic do agentic systems delegate to LLM calls, and where do the outputs flow?</p>
         <div class="finding"><div class="fn">Finding 1</div><p>48% of LLM outputs reach control flow or execution, and 40% of these are free text.</p></div>
         <div class="finding"><div class="fn">Finding 2</div><p>71% of LLM outputs are used only by the program or by other models, and 22% of call sites serve decision-relevant and other roles at once.</p></div>
         <figure style="margin-top:22px">
@@ -397,7 +403,7 @@ footer{padding:40px 0 64px;font-size:13.5px;color:var(--ink-3)}
           </figure>
           <div class="prose">
             <h3>A free-text reply as a safety gate</h3>
-            <p>Most outputs never reach a person. Outputs also fan out: 57% feed two or more kinds of consumer, and 238 model-to-model hand-offs form chains of up to 12 steps.</p>
+            <p>Most outputs never reach a person. Outputs also fan out: 57% feed two or more kinds of consumer, and 227 generated outputs feed another model, forming chains of up to 12 steps in six systems.</p>
             <p>An error or an injected instruction at the start of such a chain can shape decisions several calls later without any person in the loop.</p>
           </div>
         </div>
@@ -405,7 +411,7 @@ footer{padding:40px 0 64px;font-size:13.5px;color:var(--ink-3)}
 
       <div class="rq-block">
         <span class="rq-tag">RQ2</span>
-        <p class="rq-q">How do agentic systems constrain LLM calls?</p>
+        <p class="rq-q">How do agentic systems specify and enforce the contracts of their LLM calls?</p>
         <div class="finding"><div class="fn">Finding 3</div><p>Programs enforce 78% of their constraints in code, but 67% of prompt-phase constraints are only requested from the model, including 268 that code could decide.</p></div>
         <div class="finding"><div class="fn">Finding 4</div><p>Code checks favor recovery over validation, and decision-relevant call sites are not better protected than others in 18 of 23 systems.</p></div>
         <figure style="margin-top:22px">
@@ -416,7 +422,7 @@ footer{padding:40px 0 64px;font-size:13.5px;color:var(--ink-3)}
 
       <div class="rq-block">
         <span class="rq-tag">RQ3</span>
-        <p class="rq-q">Where do expected and implemented contracts diverge?</p>
+        <p class="rq-q">How adequate are the implemented contracts, and where do they fall short?</p>
         <div class="finding"><div class="fn">Finding 5</div><p>63% of the expected constraints are unmet, rising to 72% for post-conditions, and 29% are enforced more weakly than required.</p></div>
         <div class="finding"><div class="fn">Finding 6</div><p>82% of call sites check in code before and after the call, yet only 5.3% satisfy their whole expected contract, and the median call site satisfies one third.</p></div>
         <div class="finding"><div class="fn">Finding 7</div><p>Ten recurring patterns explain 99% of the gaps, and fail-open handling alone accounts for 44% of the conflicting verdicts.</p></div>
@@ -438,7 +444,7 @@ footer{padding:40px 0 64px;font-size:13.5px;color:var(--ink-3)}
 
       <div class="rq-block">
         <span class="rq-tag">RQ4</span>
-        <p class="rq-q">Are contract gaps exploitable, and does enforcing the missing constraint prevent them?</p>
+        <p class="rq-q">What are the runtime consequences of contract gaps, and does enforcing the missing constraint prevent them?</p>
         <div class="finding"><div class="fn">Finding 8</div><p>17% of the gaps are technically exploitable, the missing constraint lies on the threat chain for 7% (114 gaps), and 38 of the 60 mechanisms behind them trigger.</p></div>
         <div class="finding"><div class="fn">Finding 9</div><p>A minimal code fix that enforces the expected constraint stops the original exploit for all 38 mechanisms and blocks 23 completely, while fixes that only label untrusted content work for some mechanisms and not others.</p></div>
         <p class="prose" style="margin-top:18px">The full funnel and the trigger tests are in <a href="#runtime">Exploits &amp; fixes</a> below.</p>
@@ -515,7 +521,7 @@ footer{padding:40px 0 64px;font-size:13.5px;color:var(--ink-3)}
       </div>
       <p class="note">Screening excludes 83% of the gaps, mostly because they arise before the reply exists or an independent check stops the bad value. The 60 mechanisms score 9 critical, 21 high, 26 medium and 4 low on CVSS v3.1. Patches span 19 systems and range from 1 to 366 lines.</p>
 
-      <h3 style="margin-top:48px">Ten of the 58 real-model trigger tests</h3>
+      <h3 style="margin-top:48px">Seven of the 58 real-model trigger tests</h3>
       <p class="prose">Each test tries up to ten framings of the payload against <code>deepseek-v4-flash</code>, stops at the first that reaches the consumer, and reruns it. Some need no attacker at all.</p>
       <div class="tbl-wrap" style="margin-top:16px">
         <table>
@@ -527,13 +533,10 @@ footer{padding:40px 0 64px;font-size:13.5px;color:var(--ink-3)}
             <tr><td class="pat">gpt-researcher</td><td>chat renders report text as HTML</td><td>attacker</td><td class="n"><span class="outcome o-all">5/5</span></td><td class="ex"></td></tr>
             <tr class="grp"><td colspan="5">Triggered in some runs</td></tr>
             <tr><td class="pat">skyvern</td><td>browser action policy only observes</td><td>attacker</td><td class="n"><span class="outcome o-some">4/5</span></td><td class="ex">cross-domain link flagged (1)</td></tr>
-            <tr><td class="pat">Goose</td><td>auto mode runs injected calls without review</td><td>attacker</td><td class="n"><span class="outcome o-some">1/5</span></td><td class="ex">refused (3), turn budget ran out (1)</td></tr>
-            <tr><td class="pat">Codewhale</td><td><code>repl</code> fence found by substring</td><td>attacker, model</td><td class="n"><span class="outcome o-some">1/10</span></td><td class="ex">parser unmet (6), refused (2), off-task (1)</td></tr>
+                        <tr><td class="pat">Codewhale</td><td><code>repl</code> fence found by substring</td><td>attacker, model</td><td class="n"><span class="outcome o-some">1/10</span></td><td class="ex">parser unmet (6), refused (2), off-task (1)</td></tr>
             <tr class="grp"><td colspan="5">Never triggered</td></tr>
             <tr><td class="pat">OpenManus</td><td><code>python_execute</code> runs model-written code</td><td>attacker</td><td class="n"><span class="outcome o-none">0/10</span></td><td class="ex">injection recognized (10)</td></tr>
-            <tr><td class="pat">Codewhale</td><td>ghost-text continuation skips the shell approval</td><td>attacker</td><td class="n"><span class="outcome o-none">0/20</span></td><td class="ex">exact format never reproduced (20)</td></tr>
-            <tr><td class="pat">UFO</td><td>editing mode rebuilds the whole task graph</td><td>attacker</td><td class="n"><span class="outcome o-none">0/10</span></td><td class="ex">injection recognized (10)</td></tr>
-            <tr><td class="pat">khoj</td><td>tool dispatch skips the authorization check</td><td>attacker</td><td class="n"><span class="outcome o-none">0/10</span></td><td class="ex">refused (4), ignored (4), wrong format (2)</td></tr>
+                                    <tr><td class="pat">khoj</td><td>tool dispatch skips the authorization check</td><td>attacker</td><td class="n"><span class="outcome o-none">0/10</span></td><td class="ex">refused (4), ignored (4), wrong format (2)</td></tr>
           </tbody>
         </table>
       </div>
@@ -584,33 +587,36 @@ footer{padding:40px 0 64px;font-size:13.5px;color:var(--ink-3)}
       <div class="sec-num">06</div>
       <div>
         <h2>Implications</h2>
-        <p class="lede">Having checks says little about their adequacy, protection does not follow the stakes, and contracts break on the failure paths.</p>
+        <p class="lede">When logic moves into an LLM call, its specification moves into the program around the call site. Programs re-establish part of it in code, leave much to the prompt, check the form of a reply more than its meaning, and break their checks on failure paths.</p>
       </div>
     </div>
     <div class="impl">
-      <div class="icard">
+      <div class="icard wide">
         <h3>For agent developers</h3>
         <ol>
-          <li><b>Write the contract before the code.</b> The derivation criteria work as a checklist for each responsibility.</li>
-          <li><b>Move decidable constraints out of the prompt.</b> 268 syntactic constraints are only stated to the model.</li>
-          <li><b>Fail closed, on every exit.</b> An empty, unparseable, truncated or failed reply should be rejected.</li>
-          <li><b>Validate proposed actions against what was offered</b> before dispatching a tool call or using an identifier from a reply.</li>
+          <li><b>Restate the contract of delegated logic, per role.</b> The admission criteria give a checklist, and since 22% of call sites serve several roles, each role needs its own contract.</li>
+          <li><b>Prioritize by consumer.</b> Only 7% of the gaps lie on a threat chain, and all nine critical mechanisms sit at control-flow, machine-value or execution consumers, so the consumer type is a cheap triage rule.</li>
+          <li><b>Check in code what code can decide.</b> Programs state 268 syntactic constraints only in the prompt. Code fixes stopped the original exploit for all 38 mechanisms, whereas labeling untrusted content in the prompt removed the effect for only one of the two mechanisms that showed one.</li>
+          <li><b>Validate the meaning of a reply.</b> Post-conditions are 97% code-checked yet have the highest gap rate (72%). Unvalidated actions lie on a threat chain most often (23 of 26 exploitable gaps) and need no attacker, as JARVIS shows.</li>
+          <li><b>Fail closed on every path and honor every verdict.</b> Gemini CLI turns every failure of its policy check into an approval, skyvern computes a denial that its dispatch code never reads, and an earlier fix in gpt-researcher sanitized two renderers and missed the third.</li>
+          <li><b>Do not count on the model as the defense.</b> For 15 of the 22 mechanisms that never triggered, the model or the serving layer declined the value. Constraints enforced in code hold across models, and refusals may not.</li>
         </ol>
       </div>
       <div class="icard">
         <h3>For framework maintainers</h3>
         <ol>
-          <li><b>Safe defaults remove whole gap patterns.</b> Tool dispatch should reject names and arguments outside the declared tools.</li>
-          <li><b>Structured-output helpers should raise</b> on a parse failure and never fall back to free text.</li>
-          <li><b>Make least privilege the default</b> by scoping tools to each call. Capability restriction covers only 7.6% of constraints today.</li>
+          <li><b>Safe defaults at framework boundaries help every agent built on them.</b> Tool dispatch should reject names and arguments outside the declared tools.</li>
+          <li><b>Parsers should raise on a failure</b> and never fall back to free text, and guards should return a typed denial.</li>
+          <li><b>Make least privilege the default</b> by scoping tools to each call. Only 25% of the constraints that require a capability boundary have one.</li>
         </ol>
       </div>
       <div class="icard">
         <h3>For researchers and tool builders</h3>
         <ol>
-          <li><b>Measure whether checks are adequate.</b> Counting guards overstates protection by an order of magnitude.</li>
-          <li><b>Turn the gap patterns into detectors.</b> Several have syntactic signatures, such as an exception handler that returns approval.</li>
-          <li><b>Study agents at the call-site level.</b> Call-site contracts locate the failure and the missing check.</li>
+          <li><b>Measure adequacy, not presence.</b> 82% of call sites are checked before and after the call, yet 5.3% satisfy their whole contract.</li>
+          <li><b>Use contracts as test oracles.</b> A blindly derived expected contract supplies the oracle that tests and runtime monitors lack.</li>
+          <li><b>Build consumer-aware detectors.</b> Analyzers could flag a handler that returns approval or a verdict tested by a string prefix, filtered by our screening rules.</li>
+          <li><b>Evaluate per call site and per model.</b> Trigger outcomes depend on the model, so exploitability should be reported per model.</li>
         </ol>
       </div>
     </div>
@@ -657,6 +663,7 @@ footer{padding:40px 0 64px;font-size:13.5px;color:var(--ink-3)}
         <div><b>Review records</b>The reviewer judgments of Stages I and II and their adjudication.</div>
         <div><b>Analysis scripts</b>The scripts behind the results reported in the paper.</div>
       </div>
+      <p class="prose">The repository and this website are strictly anonymous and contain no exploit code.</p>
       <a class="btn solid" id="repo-link" href="https://anonymous.4open.science/r/llm-callsite-contracts" target="_blank" rel="noopener noreferrer">Browse the repository</a>
     </div>
   </div>
